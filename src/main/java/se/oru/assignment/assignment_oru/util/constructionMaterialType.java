@@ -1,4 +1,4 @@
-package se.oru.assignment.assignment_oru.construction_site.util;
+package se.oru.assignment.assignment_oru.util;
 
 
 /**

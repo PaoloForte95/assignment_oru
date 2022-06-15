@@ -18,7 +18,7 @@ import se.oru.assignment.assignment_oru.Robot;
 import se.oru.assignment.assignment_oru.Task;
 import se.oru.assignment.assignment_oru.methods.AbstractOptimizationAlgorithm;
 import se.oru.assignment.assignment_oru.methods.SystematicAlgorithm;
-import se.oru.assignment.assignment_oru.construction_site.util.constructionMaterialType.MATERIAL_TYPE;
+import se.oru.assignment.assignment_oru.util.constructionMaterialType.MATERIAL_TYPE;
 import se.oru.assignment.assignment_oru.fleetmasterinterface.AbstractFleetMasterInterface;
 import se.oru.assignment.assignment_oru.fleetmasterinterface.FleetMasterInterface;
 import se.oru.assignment.assignment_oru.fleetmasterinterface.FleetMasterInterfaceLib.CumulatedIndexedDelaysList;

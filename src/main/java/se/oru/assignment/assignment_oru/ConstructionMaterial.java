@@ -2,7 +2,7 @@ package se.oru.assignment.assignment_oru;
 
 
 
-import se.oru.assignment.assignment_oru.construction_site.util.constructionMaterialType.MATERIAL_TYPE;
+import se.oru.assignment.assignment_oru.util.constructionMaterialType.MATERIAL_TYPE;
 
 
 public class ConstructionMaterial {

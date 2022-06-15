@@ -14,7 +14,7 @@ import se.oru.assignment.assignment_oru.Task;
 import se.oru.assignment.assignment_oru.ConstructionMaterial;
 import se.oru.assignment.assignment_oru.OptimizationProblem;
 import se.oru.assignment.assignment_oru.methods.SystematicAlgorithm;
-import se.oru.assignment.assignment_oru.construction_site.util.constructionMaterialType.MATERIAL_TYPE;
+import se.oru.assignment.assignment_oru.util.constructionMaterialType.MATERIAL_TYPE;
 import se.oru.assignment.assignment_oru.methods.SystematicAlgorithm;
 import se.oru.assignment.assignment_oru.util.BrowserTaskVisualization;
 import se.oru.assignment.assignment_oru.util.robotType.ROBOT_TYPE;
