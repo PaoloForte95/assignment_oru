@@ -1,17 +1,29 @@
 package se.oru.assignment.assignment_oru;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.TreeSet;
 import org.apache.commons.lang.ArrayUtils;
 import org.metacsp.multi.spatioTemporal.paths.PoseSteering;
 import org.metacsp.multi.spatioTemporal.paths.TrajectoryEnvelope;
 import org.metacsp.multi.spatioTemporal.paths.TrajectoryEnvelope.SpatialEnvelope;
+import org.metacsp.utility.UI.Callback;
+
 import aima.core.util.datastructure.Pair;
+import se.oru.assignment.assignment_oru.AbstractOptimizationProblem;
+import se.oru.assignment.assignment_oru.IndexedDelay;
+import se.oru.assignment.assignment_oru.OptimizationProblem;
+import se.oru.assignment.assignment_oru.Robot;
+import se.oru.assignment.assignment_oru.Task;
+import se.oru.assignment.assignment_oru.methods.AbstractOptimizationAlgorithm;
+import se.oru.assignment.assignment_oru.methods.SystematicAlgorithm;
+import se.oru.assignment.assignment_oru.construction_site.util.constructionMaterialType.MATERIAL_TYPE;
 import se.oru.assignment.assignment_oru.fleetmasterinterface.AbstractFleetMasterInterface;
 import se.oru.assignment.assignment_oru.fleetmasterinterface.FleetMasterInterface;
 import se.oru.assignment.assignment_oru.fleetmasterinterface.FleetMasterInterfaceLib.CumulatedIndexedDelaysList;
 import se.oru.assignment.assignment_oru.methods.AbstractOptimizationAlgorithm;
+import se.oru.assignment.assignment_oru.util.robotType.ROBOT_TYPE;
 import se.oru.coordination.coordination_oru.AbstractTrajectoryEnvelopeCoordinator;
 import se.oru.coordination.coordination_oru.CriticalSection;
 import se.oru.coordination.coordination_oru.Mission;
@@ -35,47 +47,95 @@ import com.vividsolutions.jts.geom.Geometry;
 
 public class OptimizationProblem extends AbstractOptimizationProblem{
 	 
+	//Parameters of weights in Optimization Problem for Interference free-cost function
+			protected double pathLengthWeight = 1;
+			protected double arrivalTimeWeight = 0;
+			protected double tardinessWeight = 0;
+			
+			
+			//Normalizing factors
+			protected double sumTardiness = 1;
+			protected double sumMaxPathsLength = 1; //This normalizing factor is obtained by summing the longest paths for each idle robot in the fleet
+			protected double sumArrivalTime = 1; //This normalizing factor is the sum of arrival time of completing the longest path  for each robot
+			protected double sumOperationFixedTime = 1;
+			
+			
+			protected double slowestRobotVelocity;
+			protected double slowestRobotAcceleration;
+			
+			//Interference Parameters
+			protected ArrayList <SpatialEnvelope> pathsDrivingRobots = new ArrayList <SpatialEnvelope>();
 
-
-		//Parameters of weights in Optimization Problem for Interference free-cost function
-		protected double pathLengthWeight = 1;
-		protected double arrivalTimeWeight = 0;
-		protected double tardinessWeight = 0;
+			
+			protected int numAllocation = 1;
+			
+			
+			
+			//Parameters for time analysis
+			protected long timeRequiretoEvaluatePaths;
+			protected long timeRequiretofillInPall;
+			protected long timeRequiretoComputeCriticalSection;
+			protected long timeRequiretoComputePathsDelay;
+			protected long initialTime;
 		
-		
-		//Normalizing factors
-		protected double sumTardiness = 1;
-		protected double sumMaxPathsLength = 1; //This normalizing factor is obtained by summing the longest paths for each idle robot in the fleet
-		protected double sumArrivalTime = 1; //This normalizing factor is the sum of arrival time of completing the longest path  for each robot
-		
-		protected double slowestRobotVelocity;
-		protected double slowestRobotAcceleration;
-		
-		//Interference Parameters
-		protected ArrayList <SpatialEnvelope> pathsDrivingRobots = new ArrayList <SpatialEnvelope>();
-
-		
-		protected int numAllocation = 1;
-		
-		
-		
-		//Parameters for time analysis
-		protected long timeRequiretoEvaluatePaths;
-		protected long timeRequiretofillInPall;
-		protected long timeRequiretoComputeCriticalSection;
-		protected long timeRequiretoComputePathsDelay;
-		protected long initialTime;
+			protected AbstractOptimizationAlgorithm optimizationSolver;
+			
+			//FleetMaster Interface Parameters	
+			protected AbstractFleetMasterInterface fleetMasterInterface = null;
+			protected boolean propagateDelays = false;
+			
+			
+			protected double optimalCost;
+			
+			
+			public void setBucketCapacity(int robotID, double bkcp) {
+				bucketCapacities.put(robotID,bkcp);
+			}
+			
+			
+			private double getSumBucketCapacities() {
+				double sum = 0;
+				for(int robotID:bucketCapacities.keySet() ) {
+					sum += bucketCapacities.get(robotID);
+				}
+				
+				return sum;
+			}
 			
 		
-		
-		//FleetMaster Interface Parameters	
-		protected AbstractFleetMasterInterface fleetMasterInterface = null;
-		protected boolean propagateDelays = false;
-		
-		
-		
-		
-
+			public void setOptimalCost(double optimalCost) {
+				this.optimalCost = optimalCost;
+			}
+			
+			
+			/**
+			 * Set the material type for the specific task
+			 * @param robotID -> ID of the robot
+			 * @param robotType -> construction Material expressed as {@link ConstructionMaterial} 
+			 */
+			public void setMaterialType(Task task, ConstructionMaterial material){
+				if(!this.materialTypes.containsKey(task)){
+					this.materialTypes.put(task, material);
+				}
+				else {
+					this.materialTypes.replace(task, material);
+				}
+				
+			}
+			
+			/**
+			 * Get the material for the specific task.
+			 * @param robotID -> the ID of the task
+			 * @return The material type for the specific task.
+			 */
+			
+			public ConstructionMaterial getMaterialTypes(Task task){
+				if(this.materialTypes.containsKey(task)) {
+					return this.materialTypes.get(task);
+				}
+				return null;
+			}
+			
 		/**
 		 * Enable and initialize the fleetmaster library to estimate precedences to minimize the overall completion time.
 		 * Note: this function should be called before placing the first robot.
@@ -386,6 +446,7 @@ public class OptimizationProblem extends AbstractOptimizationProblem{
 			sumPathsLength += maxPathLength;
 			//Sum the arrival time for the max path length
 			sumArrivalTime += computeArrivalTime(maxPathLength,this.slowestRobotVelocity,this.slowestRobotAcceleration);
+			this.sumOperationFixedTime += getOperationFixedTime(robotID);
 			}
 		//Take the time to fill in the PAll Matrix
 		long timeFinal2 = Calendar.getInstance().getTimeInMillis();
@@ -620,6 +681,7 @@ public class OptimizationProblem extends AbstractOptimizationProblem{
 			sumPathsLength += maxPathLength;
 			//Sum the arrival time for the max path length
 			sumArrivalTime += computeArrivalTime(maxPathLength,this.slowestRobotVelocity,this.slowestRobotAcceleration);
+			this.sumOperationFixedTime += getOperationFixedTime(robotID);
 			}
 		double [][][] PAllAug =  checkTargetGoals(PAll);
 		//Save the sum of max paths length to normalize path length cost
@@ -656,6 +718,7 @@ public class OptimizationProblem extends AbstractOptimizationProblem{
 		//Initialize the time delay 
 		double delay = 0;
 		//Considering the Actual Assignment 
+		metaCSPLogger.info("Path delay Evaluation for Robot " +  robotID + " performing task " + taskID );
 		if (assignmentMatrix[robotIndex][taskIndex][pathID]>0) {
 			
 			// Only for real robots and tasks
@@ -728,6 +791,7 @@ public class OptimizationProblem extends AbstractOptimizationProblem{
 										 
 										 timeInitial2 = Calendar.getInstance().getTimeInMillis();
 										//Compute the delay due to precedence constraint in Critical Section
+										 metaCSPLogger.info("Critical Section between robots: " +  robotID + " - " + secondRobotID + " and tasks: " + taskID + " - " +  secondTaskID);
 										for (int g = 0; g < css.length; g++) {
 											Pair<Double, Double> a1 = estimateTimeToCompletionDelays(pss1.hashCode(),pss1,te1TCDelays,pss2.hashCode(),pss2,te2TCDelays, css[g]);
 											double delayCriticalSection = Math.min(a1.getFirst(), a1.getSecond());
@@ -782,13 +846,110 @@ public class OptimizationProblem extends AbstractOptimizationProblem{
 		return delay;
 		}
 	
-	public double evaluateMachineProductivity(int robotID ,int taskID,int pathID,double pathDelay) {
-		return 0.0;
+	
+	
+	public double evaluateBucketFillFactor(int robotID, Task task) {
+		
+		
+		
+		
+		double bucketCapacity = bucketCapacities.get(robotID);
+		
+		double bucketFillFactorParameter = bucketCapacity;
+		
+		return bucketFillFactorParameter;
 	}
+	
+	
+	public double getOperationFixedTime(int robotID) {
+		 double operationFixedTime = 0;
+		 
+		 
+		 
+		 if(!this.IDsIdleRobots.contains(robotID)) {
+				return 1;
+			}	
+		 
+		 switch(robotTypes.get(robotID)) {
+		 
+		 case WHEEL_LOADER:
+			 if(bucketCapacities.get(robotID) >= 1 && bucketCapacities.get(robotID) <= 3.75) {
+				 operationFixedTime = 30; 
+				 break;
+			 }
+			 else if(bucketCapacities.get(robotID) >= 4 && bucketCapacities.get(robotID) <= 5) {
+				 operationFixedTime = 33; 
+				 break; 
+			 }
+			 else if(bucketCapacities.get(robotID) >= 6 && bucketCapacities.get(robotID) <= 7) {
+				 operationFixedTime = 36; 
+				 break; 
+			 }
+			 else if(bucketCapacities.get(robotID) >= 14 && bucketCapacities.get(robotID) <= 23) {
+				 operationFixedTime = 42; 
+				 break; 
+			 }
+		 default:
+			 break;
+			 
+		 } 
+		 
+ 
+		 return operationFixedTime;
+	 }
+	 
+	
+	
+	/**
+	 * Evaluate the machine productivity for a given task
+	 * @param robot -> The i-th Robot
+	 * @param task -> The j-th Task
+	 * @param pathID -> The s-th path
+	 * @param assignmentMatrix -> The Assignment Matrix related to a solution of the optimization problem
+	 * @return The productivity value associated to the given machine
+	 */
+	public double evaluateMachineProductivity (int robotID ,int taskID,int pathID,double pathDelay) {
+		
+		
+		double machineProductivity = 1;
+		
+		if(IDsIdleRobots.contains(robotID) && realTasksIDs.contains(taskID)) {
+			
+			int taskIndex = tasksIDs.indexOf(taskID);
+			
+			double fill_factor = this.materialTypes.get(taskQueue.get(taskIndex)).getFillFactor();
+			double density = this.materialTypes.get(taskQueue.get(taskIndex)).getDensity();
+		
+			double fixed_time = getOperationFixedTime(robotID);
+			
+			double pathlength = Missions.getPathLength(pathsToTargetGoal.get(robotID*numTaskAug*alternativePaths+taskID*alternativePaths+pathID));
+
+			double nominalArrivalTime = computeArrivalTime(pathlength,coordinator.getRobotMaxVelocity(robotID),coordinator.getRobotMaxAcceleration(robotID));
+			
+			double nominal_time = (fixed_time + nominalArrivalTime)/(this.sumOperationFixedTime+sumArrivalTime);
+			double real_time = (fixed_time + nominalArrivalTime + pathDelay*sumArrivalTime)/(this.sumOperationFixedTime+sumArrivalTime);
+			
+			double actual_weight = fill_factor*bucketCapacities.get(robotID)*density*0.6; // FIXME from sensor
+			
+			double theoretical_weight = fill_factor*bucketCapacities.get(robotID)*density;
+		
+			machineProductivity = (actual_weight/real_time)/(theoretical_weight/nominal_time);
+		
+			
+		}
+		
+		return machineProductivity;
+		
+	}
+	
+	
+	
 	
 	public double evaluateInterferenceCost(int robotID ,int taskID,int pathID,double [][][] assignmentMatrix) {
 		
 		double pathDelayCost = evaluatePathDelay(robotID,taskID,pathID,assignmentMatrix)/sumArrivalTime;
+		metaCSPLogger.info("Delay: " + (pathDelayCost*sumArrivalTime) );
+		//double pathDelayCost = evaluatePathDelay(robotID,taskID,pathID,assignmentMatrix);
 		return pathDelayCost;
 	}
 	
@@ -1193,6 +1354,17 @@ public class OptimizationProblem extends AbstractOptimizationProblem{
 	}//End Task Assignment Function
 	
 	
+	Callback cb = new Callback() {
+		private long lastUpdate = Calendar.getInstance().getTimeInMillis();
+		@Override
+		public void performOperation() {
+			long timeNow = Calendar.getInstance().getTimeInMillis();
+			if (timeNow-lastUpdate > 1000) {
+				lastUpdate = timeNow;
+			}
+		}
+	};
+	
 	
 	public void startTaskAssignment(AbstractOptimizationAlgorithm optimizationSolver ) {
 		//Create meta solver and solver
@@ -1213,7 +1385,7 @@ public class OptimizationProblem extends AbstractOptimizationProblem{
 				while (true) {
 					System.out.println("Thread Running");
 					
-					if (!taskQueue.isEmpty() && coordinator.getIdleRobots().size() > 2) {
+					if (!taskQueue.isEmpty() && coordinator.getIdleRobots().size() >= 2) {
 						optimizationModel = createOptimizationProblem();
 						double [][][] assignmentMatrix = findOptimalAssignment(optimizationSolver);
 						for (int i = 0; i < assignmentMatrix.length; i++) {

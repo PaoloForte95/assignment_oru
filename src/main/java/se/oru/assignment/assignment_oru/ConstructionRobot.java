@@ -1,4 +1,4 @@
-package se.oru.assignment.assignment_oru.construction_site;
+package se.oru.assignment.assignment_oru;
 
 import com.vividsolutions.jts.geom.Coordinate;
 

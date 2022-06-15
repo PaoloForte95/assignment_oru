@@ -14,7 +14,7 @@ public abstract class constructionMaterialType {
 	 * @author pofe
 	 *
 	 */
-	public static enum MATERIAL_TYPE {SAND, ROCK, SOIL};
+	public static enum MATERIAL_TYPE {SAND, GRAVEL, SOIL, ROCK, UNKNOWN};
 
 }
 

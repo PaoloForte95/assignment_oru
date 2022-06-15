@@ -20,6 +20,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 
 import com.vividsolutions.jts.geom.Polygon;
 
+import se.oru.assignment.assignment_oru.ConstructionMaterial;
 import se.oru.assignment.assignment_oru.methods.AbstractOptimizationAlgorithm;
 import se.oru.assignment.assignment_oru.util.TaskFleetVisualization;
 import se.oru.assignment.assignment_oru.util.robotType.ROBOT_TYPE;
@@ -51,7 +52,7 @@ public abstract class AbstractOptimizationProblem {
 
 		public static String TITLE = "assignment_oru - Robot-agnostic online task assignment for multiple robots";
 		public static String COPYRIGHT = "Copyright \u00a9 2020-" + Calendar.getInstance().get(Calendar.YEAR) + " Paolo Forte";
-		public static String[] CONTRIBUTORS = {"Anna Mannucci", "Federico Pecora"};
+		public static String[] CONTRIBUTORS = {"Paolo Forte", "Anna Mannucci", "Federico Pecora"};
 	
 		//null -> public (GPL3) license
 		public static String LICENSE = null;
@@ -107,7 +108,9 @@ public abstract class AbstractOptimizationProblem {
 		protected Logger metaCSPLogger = MetaCSPLogging.getLogger(this.getClass());	
 		protected HashMap<Integer, PoseSteering[]> pathsToTargetGoal =  new HashMap<Integer, PoseSteering[]>();
 		
-	
+		//Materials Parameters
+		protected HashMap<Task,ConstructionMaterial> materialTypes = new HashMap<Task,ConstructionMaterial>();	
+		protected HashMap<Integer,Double> bucketCapacities = new HashMap<Integer,Double>();
 		
 	
 		
@@ -120,6 +123,14 @@ public abstract class AbstractOptimizationProblem {
 		//Visualization parameters
 		protected TaskFleetVisualization viz = null;
 		
+		
+		public double getBucketCapacity(int robotID) {
+			if(bucketCapacities.containsKey(robotID)) {
+				return bucketCapacities.get(robotID);
+					
+			}
+		return 0;
+		}
 		
 		
 		/**

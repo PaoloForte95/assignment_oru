@@ -1,4 +1,4 @@
-package se.oru.assignment.assignment_oru.construction_site.test;
+package se.oru.assignment.assignment_oru.test;
 
 
 import java.util.Comparator;
@@ -11,9 +11,9 @@ import se.oru.assignment.assignment_oru.util.robotType.ROBOT_TYPE;
 import se.oru.assignment.assignment_oru.OptimizationProblem;
 
 import se.oru.assignment.assignment_oru.Task;
-import se.oru.assignment.assignment_oru.construction_site.ConstructionMaterial;
-import se.oru.assignment.assignment_oru.construction_site.MaterialFlowOptimizationProblem;
-import se.oru.assignment.assignment_oru.construction_site.methods.SystematicAlgorithmMaterialFlow;
+import se.oru.assignment.assignment_oru.ConstructionMaterial;
+import se.oru.assignment.assignment_oru.OptimizationProblem;
+import se.oru.assignment.assignment_oru.methods.SystematicAlgorithm;
 import se.oru.assignment.assignment_oru.construction_site.util.constructionMaterialType.MATERIAL_TYPE;
 import se.oru.assignment.assignment_oru.methods.SystematicAlgorithm;
 import se.oru.assignment.assignment_oru.util.BrowserTaskVisualization;
@@ -83,9 +83,9 @@ public class TaskAssignmentConstructionSite {
 		
 		
 		tec.setDefaultFootprint(footprint1, footprint2, footprint3, footprint4);
-		tec.setForwardModel(1, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getRobotTrackingPeriodInMillis(1)));
-		tec.setForwardModel(2, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getRobotTrackingPeriodInMillis(2)));
-		tec.setForwardModel(3, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getRobotTrackingPeriodInMillis(3)));
+		tec.setForwardModel(1, new ConstantAccelerationForwardModel(3, 8, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getRobotTrackingPeriodInMillis(1)));
+		tec.setForwardModel(2, new ConstantAccelerationForwardModel(2, 6, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getRobotTrackingPeriodInMillis(2)));
+		tec.setForwardModel(3, new ConstantAccelerationForwardModel(1, 4, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getRobotTrackingPeriodInMillis(3)));
 		//tec.setForwardModel(4, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getRobotTrackingPeriodInMillis(4)));
 		//tec.setForwardModel(5, new ConstantAccelerationForwardModel(MAX_ACCEL, MAX_VEL, tec.getTemporalResolution(), tec.getControlPeriod(), tec.getRobotTrackingPeriodInMillis(5)));
 				
@@ -160,8 +160,8 @@ public class TaskAssignmentConstructionSite {
 		Task task2 = new Task(2,startPoseGoal2,goalPoseGoal2,ROBOT_TYPE.WHEEL_LOADER);
 		Task task3 = new Task(3,startPoseGoal3,goalPoseGoal3,ROBOT_TYPE.WHEEL_LOADER);
 
-		Task task4 = new Task(4,startPoseGoal4,goalPoseGoal4,ROBOT_TYPE.WHEEL_LOADER);
-		Task task5 = new Task(5,startPoseGoal5,goalPoseGoal5,ROBOT_TYPE.WHEEL_LOADER);
+		//Task task4 = new Task(4,startPoseGoal4,goalPoseGoal4,ROBOT_TYPE.WHEEL_LOADER);
+		//Task task5 = new Task(5,startPoseGoal5,goalPoseGoal5,ROBOT_TYPE.WHEEL_LOADER);
 		
 		
 
@@ -169,30 +169,27 @@ public class TaskAssignmentConstructionSite {
 		//Task task6 = new Task(6,startPoseGoal6,goalPoseGoal6,1);
 	
 		//TaskAssignmentSimulatedAnnealing assignmentProblem = new TaskAssignmentSimulatedAnnealing();
-		MaterialFlowOptimizationProblem assignmentProblem = new MaterialFlowOptimizationProblem();
+		OptimizationProblem assignmentProblem = new OptimizationProblem();
 		int numPaths = 1;
 		
 		
 		
 		assignmentProblem.addTask(task1);
 		assignmentProblem.addTask(task2);
-		
-		
 		assignmentProblem.addTask(task3);
-		assignmentProblem.addTask(task4);
-		assignmentProblem.addTask(task5);
+		//assignmentProblem.addTask(task4);
+		//assignmentProblem.addTask(task5);
 		//assignmentProblem.addTask(task6);
 		
-		ConstructionMaterial mat1 = new ConstructionMaterial(MATERIAL_TYPE.SAND,0.8);
-		ConstructionMaterial mat2 = new ConstructionMaterial(MATERIAL_TYPE.SAND,0.8);
-		ConstructionMaterial mat3 = new ConstructionMaterial(MATERIAL_TYPE.SAND,0.8);
+		ConstructionMaterial mat1 = new ConstructionMaterial(MATERIAL_TYPE.SAND,1.0,1420.0);
+		ConstructionMaterial mat2 = new ConstructionMaterial(MATERIAL_TYPE.SAND,0.8,1420.0);
+		ConstructionMaterial mat3 = new ConstructionMaterial(MATERIAL_TYPE.SAND,0.8,1420.0);
 		assignmentProblem.setMaterialType(task1, mat1);
-		assignmentProblem.setMaterialType(task2, mat1);
+		assignmentProblem.setMaterialType(task2, mat2);
+		assignmentProblem.setMaterialType(task3, mat3);
+		//assignmentProblem.setMaterialType(task4, mat2);
 		
-		assignmentProblem.setMaterialType(task3, mat2);
-		assignmentProblem.setMaterialType(task4, mat2);
-		
-		assignmentProblem.setMaterialType(task5, mat3);
+		//assignmentProblem.setMaterialType(task5, mat3);
 		
 		tec.placeRobot(1,startPoseRobot1);
 		tec.placeRobot(2,startPoseRobot2);
@@ -257,9 +254,9 @@ public class TaskAssignmentConstructionSite {
 		assignmentProblem.setRobotType(2, ROBOT_TYPE.WHEEL_LOADER); //Volvo L70 model
 		assignmentProblem.setRobotType(3, ROBOT_TYPE.WHEEL_LOADER); //Volvo L70 model
 		
-		assignmentProblem.setBucketCapacity(1, 1.5); //Volvo L70 model
-		assignmentProblem.setBucketCapacity(2, 1.5); //Volvo L70 model
-		assignmentProblem.setBucketCapacity(3, 1.5); //Volvo L70 model
+		assignmentProblem.setBucketCapacity(1, 2); //Volvo L70 model
+		assignmentProblem.setBucketCapacity(2, 4); //Volvo L70 model
+		assignmentProblem.setBucketCapacity(3, 6); //Volvo L70 model
 
 		//assignmentProblem.setRobotType(4, ROBOT_TYPE.WHEEL_LOADER);
 		//assignmentProblem.setRobotType(5, ROBOT_TYPE.WHEEL_LOADER);
@@ -267,7 +264,7 @@ public class TaskAssignmentConstructionSite {
 		
 		//MPSolver solver = assignmentProblem.createOptimizationProblem();
 		
-		SystematicAlgorithmMaterialFlow sysAlg = new SystematicAlgorithmMaterialFlow();
+		SystematicAlgorithm sysAlg = new SystematicAlgorithm();
 		assignmentProblem.startTaskAssignment(sysAlg);		
 	}
 }

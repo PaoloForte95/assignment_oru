@@ -2,6 +2,8 @@ package se.oru.assignment.assignment_oru.methods;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
+
 import se.oru.assignment.assignment_oru.OptimizationProblem;
 import se.oru.assignment.assignment_oru.AbstractOptimizationProblem;
 import com.google.ortools.linearsolver.*;
@@ -69,6 +71,7 @@ public class SystematicAlgorithm extends AbstractOptimizationAlgorithm{
 			double costofAssignment = 0;
 			double costofAssignmentForConstraint = 0;
 			double costF = 0;
+			HashMap<Integer,Double> productivities = new HashMap<Integer,Double>();
 			//Evaluate the cost of F Function for this Assignment
 
 			double costFFake3 = 0;
@@ -88,7 +91,8 @@ public class SystematicAlgorithm extends AbstractOptimizationAlgorithm{
 								costF = oap.evaluateInterferenceCost(robotID,taskID,s,AssignmentMatrix);
 								costofAssignment = linearWeight*costB + (1-linearWeight)*costF + costofAssignment ;
 								costofAssignmentForConstraint = costValuesMatrix[i][j][s] + costF + costofAssignmentForConstraint;
-								
+								productivities.put(robotID,(oap.evaluateMachineProductivity(robotID,taskID,s,costF)));						
+								System.out.println("COST OF : " + costF);
 								costFFake3 = (1-linearWeight)*costF + costFFake3;
 								costBFake3 = linearWeight*costB + costBFake3;
 								
@@ -98,6 +102,7 @@ public class SystematicAlgorithm extends AbstractOptimizationAlgorithm{
 								double costB = optimizationModel.objective().getCoefficient(optimizationModel.variables()[i*numTaskAug*maxNumPaths+j*maxNumPaths+s]);
 								costofAssignment = Math.pow(linearWeight*costB, 2) + costofAssignment ;
 								costofAssignmentForConstraint = costValuesMatrix[i][j][s]  + costofAssignmentForConstraint;
+								productivities.put(robotID,(oap.evaluateMachineProductivity(robotID,taskID,s,0)));
 							}
 							
 
@@ -105,7 +110,23 @@ public class SystematicAlgorithm extends AbstractOptimizationAlgorithm{
 					}
 									
 				}		
-			}		
+			}	
+			System.out.println("PRODUCTIVITIES : " + productivities);
+			double sum1 = 0;
+			double sum2 = 0;
+
+			if(resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
+				for (int robotID : IDsAllRobots ) {
+					sum1 +=  oap.getBucketCapacity(robotID)*productivities.get(robotID);
+					sum2 += oap.getBucketCapacity(robotID);
+				}
+			}
+			
+			
+			double fleet_productivity = sum1/sum2;
+			System.out.println("TEST Cost assignment before productivity: " + costofAssignment);
+			costofAssignment = costofAssignment + (1/fleet_productivity - 1);
+			System.out.println("TEST Cost assignment after productivity: " + costofAssignment);
 			
 			//Compare actual solution and optimal solution finds so far
 			if (costofAssignment < objectiveOptimalValue && resultStatus != MPSolver.ResultStatus.INFEASIBLE) {
